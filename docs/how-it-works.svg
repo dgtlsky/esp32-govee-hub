@@ -1,106 +1,145 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif">
   <defs>
-    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M0 0 L10 5 L0 10 z" fill="#c9ced8"/>
+    <pattern id="dots" width="32" height="32" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.6" fill="#D6D6D0"/>
+    </pattern>
+    <marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M1 1 L11 6 L1 11" fill="none" stroke="#2B2B2B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </marker>
+    <filter id="sticky" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000" flood-opacity="0.12"/>
+    </filter>
   </defs>
 
-  <rect width="1920" height="1080" fill="#0e1014"/>
+  <!-- Board -->
+  <rect width="1920" height="1080" fill="#F7F7F4"/>
+  <rect width="1920" height="1080" fill="url(#dots)"/>
 
-  <text x="960" y="110" text-anchor="middle" font-size="56" font-weight="700" fill="#f5f6f8">How it works</text>
-  <text x="960" y="162" text-anchor="middle" font-size="28" fill="#9aa3b2">Control smart lights from an app, using a $10 ESP32 board</text>
+  <!-- Title -->
+  <text x="80" y="112" font-size="46" font-weight="700" fill="#1F1F1F">How the ESP32 Govee Hub works</text>
+  <text x="80" y="156" font-size="24" fill="#6B6B66">Tap a button anywhere. A $10 board at home flips the light.</text>
 
-  <!-- Regions -->
-  <rect x="60" y="220" width="860" height="530" rx="28" fill="#13161c" stroke="#262b35" stroke-width="2"/>
-  <text x="96" y="268" font-size="22" font-weight="600" letter-spacing="3" fill="#7d8696">THE INTERNET</text>
-  <text x="490" y="715" text-anchor="middle" font-size="22" fill="#7d8696">Works from anywhere: home, work, on cellular</text>
+  <!-- Callout sticky -->
+  <g transform="rotate(2 1720 150)" filter="url(#sticky)">
+    <rect x="1590" y="72" width="260" height="150" rx="4" fill="#FFD6E7"/>
+    <text x="1720" y="128" text-anchor="middle" font-size="22" font-weight="700" fill="#1F1F1F">The ESP32 reaches out.</text>
+    <text x="1720" y="162" text-anchor="middle" font-size="22" font-weight="700" fill="#1F1F1F">Nothing reaches in.</text>
+    <text x="1720" y="196" text-anchor="middle" font-size="17" fill="#5A4650">No port forwarding, no VPN</text>
+  </g>
 
-  <rect x="1000" y="220" width="860" height="530" rx="28" fill="none" stroke="#4a5262" stroke-width="3" stroke-dasharray="14 10"/>
-  <text x="1036" y="268" font-size="22" font-weight="600" letter-spacing="3" fill="#7d8696">YOUR HOME WIFI</text>
-  <text x="1430" y="715" text-anchor="middle" font-size="22" fill="#7d8696">The ESP32 reaches out. Nothing reaches in.</text>
+  <!-- Frames -->
+  <text x="80" y="242" font-size="20" font-weight="600" fill="#7A7A74">In the cloud</text>
+  <rect x="80" y="256" width="820" height="450" rx="14" fill="#FFFFFF" stroke="#E2E2DC" stroke-width="2"/>
+  <text x="490" y="680" text-anchor="middle" font-size="19" fill="#8A8A84">Works from anywhere: home, work, on cellular</text>
+
+  <text x="1020" y="242" font-size="20" font-weight="600" fill="#7A7A74">In your home</text>
+  <rect x="1020" y="256" width="820" height="450" rx="14" fill="#FFFFFF" stroke="#E2E2DC" stroke-width="2"/>
+  <text x="1430" y="680" text-anchor="middle" font-size="19" fill="#8A8A84">On your home WiFi, no extra hardware</text>
 
   <!-- Node: app -->
-  <rect x="100" y="320" width="240" height="320" rx="22" fill="#1a1d24" stroke="#2e333d" stroke-width="2"/>
-  <rect x="185" y="368" width="70" height="120" rx="12" fill="none" stroke="#a78bfa" stroke-width="5"/>
-  <line x1="208" y1="472" x2="232" y2="472" stroke="#a78bfa" stroke-width="5" stroke-linecap="round"/>
-  <text x="220" y="555" text-anchor="middle" font-size="32" font-weight="700" fill="#f5f6f8">Your app</text>
-  <text x="220" y="595" text-anchor="middle" font-size="22" fill="#9aa3b2">Built with Lovable</text>
+  <rect x="140" y="340" width="240" height="210" rx="18" fill="#ECE6FF" stroke="#B9A8F5" stroke-width="2"/>
+  <g fill="none" stroke="#2B2B2B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="241" y="368" width="38" height="64" rx="7"/>
+    <line x1="254" y1="421" x2="266" y2="421"/>
+  </g>
+  <text x="260" y="482" text-anchor="middle" font-size="27" font-weight="700" fill="#1F1F1F">Your app</text>
+  <text x="260" y="516" text-anchor="middle" font-size="19" fill="#4A4560">Built with Lovable</text>
 
   <!-- Node: Supabase -->
-  <rect x="620" y="320" width="240" height="320" rx="22" fill="#1a1d24" stroke="#2e333d" stroke-width="2"/>
-  <ellipse cx="740" cy="385" rx="55" ry="16" fill="none" stroke="#3ecf8e" stroke-width="5"/>
-  <path d="M685 385 V472 A55 16 0 0 0 795 472 V385" fill="none" stroke="#3ecf8e" stroke-width="5"/>
-  <path d="M685 428 A55 16 0 0 0 795 428" fill="none" stroke="#3ecf8e" stroke-width="5"/>
-  <text x="740" y="555" text-anchor="middle" font-size="32" font-weight="700" fill="#f5f6f8">Supabase</text>
-  <text x="740" y="595" text-anchor="middle" font-size="22" fill="#9aa3b2">The mailbox</text>
+  <rect x="600" y="340" width="240" height="210" rx="18" fill="#DDF5E8" stroke="#8FD3AF" stroke-width="2"/>
+  <g fill="none" stroke="#2B2B2B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="720" cy="376" rx="30" ry="9"/>
+    <path d="M690 376 V424 A30 9 0 0 0 750 424 V376"/>
+    <path d="M690 400 A30 9 0 0 0 750 400"/>
+  </g>
+  <text x="720" y="482" text-anchor="middle" font-size="27" font-weight="700" fill="#1F1F1F">Supabase</text>
+  <text x="720" y="516" text-anchor="middle" font-size="19" fill="#3F5A4C">The mailbox</text>
 
   <!-- Node: ESP32 -->
-  <rect x="1060" y="320" width="240" height="320" rx="22" fill="#1a1d24" stroke="#4f8cff" stroke-width="3"/>
-  <rect x="1135" y="385" width="90" height="90" rx="10" fill="none" stroke="#4f8cff" stroke-width="5"/>
-  <rect x="1158" y="408" width="44" height="44" rx="4" fill="#4f8cff" opacity="0.35"/>
-  <g stroke="#4f8cff" stroke-width="5" stroke-linecap="round">
-    <line x1="1123" y1="402" x2="1135" y2="402"/><line x1="1123" y1="430" x2="1135" y2="430"/><line x1="1123" y1="458" x2="1135" y2="458"/>
-    <line x1="1225" y1="402" x2="1237" y2="402"/><line x1="1225" y1="430" x2="1237" y2="430"/><line x1="1225" y1="458" x2="1237" y2="458"/>
-    <line x1="1152" y1="373" x2="1152" y2="385"/><line x1="1180" y1="373" x2="1180" y2="385"/><line x1="1208" y1="373" x2="1208" y2="385"/>
-    <line x1="1152" y1="475" x2="1152" y2="487"/><line x1="1180" y1="475" x2="1180" y2="487"/><line x1="1208" y1="475" x2="1208" y2="487"/>
+  <rect x="1080" y="340" width="240" height="210" rx="18" fill="#DCEAFF" stroke="#8DB4F0" stroke-width="2"/>
+  <g fill="none" stroke="#2B2B2B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="1174" y="370" width="52" height="52" rx="6"/>
+    <rect x="1189" y="385" width="22" height="22" rx="2"/>
+    <line x1="1166" y1="382" x2="1174" y2="382"/><line x1="1166" y1="396" x2="1174" y2="396"/><line x1="1166" y1="410" x2="1174" y2="410"/>
+    <line x1="1226" y1="382" x2="1234" y2="382"/><line x1="1226" y1="396" x2="1234" y2="396"/><line x1="1226" y1="410" x2="1234" y2="410"/>
+    <line x1="1186" y1="362" x2="1186" y2="370"/><line x1="1200" y1="362" x2="1200" y2="370"/><line x1="1214" y1="362" x2="1214" y2="370"/>
+    <line x1="1186" y1="422" x2="1186" y2="430"/><line x1="1200" y1="422" x2="1200" y2="430"/><line x1="1214" y1="422" x2="1214" y2="430"/>
   </g>
-  <text x="1180" y="555" text-anchor="middle" font-size="32" font-weight="700" fill="#f5f6f8">ESP32</text>
-  <text x="1180" y="595" text-anchor="middle" font-size="22" fill="#9aa3b2">The hub, always on</text>
+  <text x="1200" y="482" text-anchor="middle" font-size="27" font-weight="700" fill="#1F1F1F">ESP32</text>
+  <text x="1200" y="516" text-anchor="middle" font-size="19" fill="#3E4F6B">The hub, always on</text>
 
   <!-- Node: lights -->
-  <rect x="1580" y="320" width="240" height="320" rx="22" fill="#1a1d24" stroke="#2e333d" stroke-width="2"/>
-  <circle cx="1700" cy="418" r="40" fill="none" stroke="#ffb020" stroke-width="5"/>
-  <rect x="1684" y="462" width="32" height="22" rx="4" fill="none" stroke="#ffb020" stroke-width="5"/>
-  <g stroke="#ffb020" stroke-width="5" stroke-linecap="round">
-    <line x1="1700" y1="358" x2="1700" y2="346"/>
-    <line x1="1650" y1="378" x2="1641" y2="369"/>
-    <line x1="1750" y1="378" x2="1759" y2="369"/>
+  <rect x="1560" y="340" width="240" height="210" rx="18" fill="#FFF1C2" stroke="#EFCB62" stroke-width="2"/>
+  <g fill="none" stroke="#2B2B2B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M1665 412 A24 24 0 1 1 1695 412 L1691 420 H1669 Z"/>
+    <line x1="1670" y1="430" x2="1690" y2="430"/>
+    <line x1="1680" y1="352" x2="1680" y2="358"/>
+    <line x1="1647" y1="366" x2="1652" y2="370"/>
+    <line x1="1713" y1="366" x2="1708" y2="370"/>
   </g>
-  <text x="1700" y="555" text-anchor="middle" font-size="32" font-weight="700" fill="#f5f6f8">Smart lights</text>
-  <text x="1700" y="595" text-anchor="middle" font-size="22" fill="#9aa3b2">Govee, on WiFi</text>
+  <text x="1680" y="482" text-anchor="middle" font-size="27" font-weight="700" fill="#1F1F1F">Smart lights</text>
+  <text x="1680" y="516" text-anchor="middle" font-size="19" fill="#5E5233">Govee, on WiFi</text>
 
-  <!-- Arrows: top row flows right (the command), bottom row flows left (the result) -->
-  <g stroke="#c9ced8" stroke-width="3" fill="none">
-    <line x1="352" y1="440" x2="606" y2="440" marker-end="url(#arrow)"/>
-    <line x1="872" y1="440" x2="1046" y2="440" marker-end="url(#arrow)"/>
-    <line x1="1312" y1="440" x2="1566" y2="440" marker-end="url(#arrow)"/>
-    <line x1="1046" y1="540" x2="872" y2="540" marker-end="url(#arrow)"/>
-    <line x1="606" y1="540" x2="352" y2="540" marker-end="url(#arrow)"/>
+  <!-- Connectors: the command -->
+  <g fill="none" stroke="#2B2B2B" stroke-width="2.5" stroke-linecap="round">
+    <line x1="388" y1="430" x2="592" y2="430" marker-end="url(#arrow)"/>
+    <line x1="848" y1="430" x2="1072" y2="430" marker-end="url(#arrow)"/>
+    <line x1="1328" y1="430" x2="1552" y2="430" marker-end="url(#arrow)"/>
   </g>
-
-  <g font-weight="700" font-size="20" text-anchor="middle">
-    <circle cx="480" cy="440" r="20" fill="#f5f6f8"/><text x="480" y="447" fill="#0e1014">1</text>
-    <circle cx="960" cy="440" r="20" fill="#f5f6f8"/><text x="960" y="447" fill="#0e1014">2</text>
-    <circle cx="1440" cy="440" r="20" fill="#f5f6f8"/><text x="1440" y="447" fill="#0e1014">3</text>
-    <circle cx="960" cy="540" r="20" fill="#f5f6f8"/><text x="960" y="547" fill="#0e1014">4</text>
-    <circle cx="480" cy="540" r="20" fill="#f5f6f8"/><text x="480" y="547" fill="#0e1014">5</text>
+  <!-- Connectors: the result, looping back underneath -->
+  <g fill="none" stroke="#2B2B2B" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="2 8">
+    <path d="M1160 558 C1160 640, 760 640, 760 562" marker-end="url(#arrow)"/>
+    <path d="M680 558 C680 640, 300 640, 300 562" marker-end="url(#arrow)"/>
   </g>
 
-  <g font-size="22" fill="#e3e6eb" text-anchor="middle">
-    <text x="480" y="402">You tap "Lamp on"</text>
-    <text x="960" y="402">Picks it up</text>
-    <text x="1440" y="402">Turns the light on</text>
-    <text x="960" y="592">Reports "Done"</text>
-    <text x="480" y="592">App updates</text>
+  <!-- Step labels -->
+  <g font-size="19" fill="#1F1F1F">
+    <rect x="398" y="386" width="184" height="36" rx="18" fill="#FFFFFF" stroke="#2B2B2B" stroke-width="2"/>
+    <circle cx="418" cy="404" r="12" fill="#2B2B2B"/><text x="418" y="410" text-anchor="middle" font-size="15" font-weight="700" fill="#FFFFFF">1</text>
+    <text x="438" y="411">Tap "Lamp on"</text>
+
+    <rect x="878" y="386" width="164" height="36" rx="18" fill="#FFFFFF" stroke="#2B2B2B" stroke-width="2"/>
+    <circle cx="898" cy="404" r="12" fill="#2B2B2B"/><text x="898" y="410" text-anchor="middle" font-size="15" font-weight="700" fill="#FFFFFF">2</text>
+    <text x="918" y="411">Picks it up</text>
+
+    <rect x="1358" y="386" width="164" height="36" rx="18" fill="#FFFFFF" stroke="#2B2B2B" stroke-width="2"/>
+    <circle cx="1378" cy="404" r="12" fill="#2B2B2B"/><text x="1378" y="410" text-anchor="middle" font-size="15" font-weight="700" fill="#FFFFFF">3</text>
+    <text x="1398" y="411">Turns it on</text>
+
+    <rect x="876" y="602" width="168" height="36" rx="18" fill="#FFFFFF" stroke="#2B2B2B" stroke-width="2"/>
+    <circle cx="896" cy="620" r="12" fill="#2B2B2B"/><text x="896" y="626" text-anchor="middle" font-size="15" font-weight="700" fill="#FFFFFF">4</text>
+    <text x="916" y="627">Says "Done!"</text>
+
+    <rect x="406" y="602" width="168" height="36" rx="18" fill="#FFFFFF" stroke="#2B2B2B" stroke-width="2"/>
+    <circle cx="426" cy="620" r="12" fill="#2B2B2B"/><text x="426" y="626" text-anchor="middle" font-size="15" font-weight="700" fill="#FFFFFF">5</text>
+    <text x="446" y="627">App updates</text>
   </g>
 
-  <!-- What runs on the ESP32 -->
-  <text x="960" y="822" text-anchor="middle" font-size="26" font-weight="600" fill="#f5f6f8">What the ESP32 runs, all day, on a phone charger</text>
-  <g>
-    <rect x="80" y="855" width="400" height="120" rx="18" fill="#1a1d24" stroke="#2e333d" stroke-width="2"/>
-    <text x="280" y="907" text-anchor="middle" font-size="28" font-weight="700" fill="#f5f6f8">Connects to WiFi</text>
-    <text x="280" y="945" text-anchor="middle" font-size="21" fill="#9aa3b2">Joins your home network</text>
+  <!-- What the ESP32 runs: sticky notes -->
+  <text x="80" y="790" font-size="24" font-weight="700" fill="#1F1F1F">What the ESP32 runs, all day, on a phone charger</text>
 
-    <rect x="540" y="855" width="400" height="120" rx="18" fill="#1a1d24" stroke="#2e333d" stroke-width="2"/>
-    <text x="740" y="907" text-anchor="middle" font-size="28" font-weight="700" fill="#f5f6f8">Finds your lights</text>
-    <text x="740" y="945" text-anchor="middle" font-size="21" fill="#9aa3b2">Scans the network for them</text>
-
-    <rect x="1000" y="855" width="400" height="120" rx="18" fill="#1a1d24" stroke="#4f8cff" stroke-width="3"/>
-    <text x="1200" y="907" text-anchor="middle" font-size="28" font-weight="700" fill="#f5f6f8">Checks the mailbox</text>
-    <text x="1200" y="945" text-anchor="middle" font-size="21" fill="#9aa3b2">Every 2 seconds</text>
-
-    <rect x="1460" y="855" width="400" height="120" rx="18" fill="#1a1d24" stroke="#2e333d" stroke-width="2"/>
-    <text x="1660" y="907" text-anchor="middle" font-size="28" font-weight="700" fill="#f5f6f8">Controls the lights</text>
-    <text x="1660" y="945" text-anchor="middle" font-size="21" fill="#9aa3b2">On/off, brightness, color</text>
+  <g transform="rotate(-1.2 270 912)" filter="url(#sticky)">
+    <rect x="80" y="815" width="380" height="195" rx="4" fill="#FFF3A3"/>
+    <text x="110" y="872" font-size="27" font-weight="700" fill="#1F1F1F">Joins your WiFi</text>
+    <text x="110" y="912" font-size="20" fill="#5A5532">Connects as soon as it</text>
+    <text x="110" y="940" font-size="20" fill="#5A5532">gets power</text>
+  </g>
+  <g transform="rotate(0.8 720 912)" filter="url(#sticky)">
+    <rect x="530" y="815" width="380" height="195" rx="4" fill="#FFF3A3"/>
+    <text x="560" y="872" font-size="27" font-weight="700" fill="#1F1F1F">Finds your lights</text>
+    <text x="560" y="912" font-size="20" fill="#5A5532">Scans your network and</text>
+    <text x="560" y="940" font-size="20" fill="#5A5532">your Govee account</text>
+  </g>
+  <g transform="rotate(-0.6 1170 912)" filter="url(#sticky)">
+    <rect x="980" y="815" width="380" height="195" rx="4" fill="#FFF3A3"/>
+    <text x="1010" y="872" font-size="27" font-weight="700" fill="#1F1F1F">Checks the mailbox</text>
+    <text x="1010" y="912" font-size="20" fill="#5A5532">Asks Supabase for new</text>
+    <text x="1010" y="940" font-size="20" fill="#5A5532">commands every 2 seconds</text>
+  </g>
+  <g transform="rotate(1.1 1620 912)" filter="url(#sticky)">
+    <rect x="1430" y="815" width="380" height="195" rx="4" fill="#FFF3A3"/>
+    <text x="1460" y="872" font-size="27" font-weight="700" fill="#1F1F1F">Controls the lights</text>
+    <text x="1460" y="912" font-size="20" fill="#5A5532">On/off, brightness, color</text>
+    <text x="1460" y="940" font-size="20" fill="#5A5532">and warm/cool white</text>
   </g>
 </svg>
