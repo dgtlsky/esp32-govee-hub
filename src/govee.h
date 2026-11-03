@@ -15,6 +15,7 @@ struct Light {
 
   bool online = true;  // false once a LAN light stops answering, or Govee's cloud reports it offline
   uint8_t missedStatusPolls = 0;
+  uint32_t lastSeenMs = 0;  // last LAN reply of any kind from this light
 
   bool supportsColorTemp = true;
   bool lanColorTemp = true;  // false for models that ignore Kelvin over LAN; those use the cloud for it
@@ -35,6 +36,9 @@ struct Light {
 namespace govee {
 
 void begin();
+
+// (Re)opens the LAN reply listener on UDP port 4002. Call after WiFi reconnects.
+void restartLan();
 
 // Fetches the account's device list from the cloud and finds which lights answer on the LAN.
 void discover();

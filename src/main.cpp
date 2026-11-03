@@ -19,11 +19,27 @@ static uint32_t lastLanRescan = 0;
 static const uint32_t CLOUD_STATE_INTERVAL_MS = 60UL * 1000UL;
 static uint32_t lastCloudState = 0;
 
+static volatile bool wifiLost = false;
+static volatile bool lanRestartPending = false;
+
+static void onWifiEvent(arduino_event_id_t event, arduino_event_info_t info) {
+  if (event == ARDUINO_EVENT_WIFI_STA_DISCONNECTED && !wifiLost) {
+    wifiLost = true;
+    Serial.printf("WiFi disconnected (reason %u), reconnecting...\n", info.wifi_sta_disconnected.reason);
+  } else if (event == ARDUINO_EVENT_WIFI_STA_GOT_IP && wifiLost) {
+    wifiLost = false;
+    lanRestartPending = true;  // sockets are reopened from loop(), not from this event task
+  }
+}
+
 static bool connectWifi() {
   Serial.printf("Connecting to WiFi \"%s\"", WIFI_SSID);
   WiFi.mode(WIFI_STA);
   WiFi.setHostname(HOSTNAME);
   WiFi.setAutoReconnect(true);
+  // Power saving makes the radio doze between beacons, which delays Govee's UDP replies past our listening windows.
+  WiFi.setSleep(false);
+  WiFi.onEvent(onWifiEvent);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
   const uint32_t start = millis();
@@ -137,6 +153,12 @@ void setup() {
 }
 
 void loop() {
+  if (lanRestartPending) {
+    lanRestartPending = false;
+    Serial.printf("WiFi back. IP: %s\n", WiFi.localIP().toString().c_str());
+    govee::restartLan();
+  }
+
   server.handleClient();
   cloud_sync::loop();
 

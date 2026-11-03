@@ -16,8 +16,12 @@ const uint16_t SCAN_PORT = 4001;
 const uint16_t RESPONSE_PORT = 4002;
 const uint16_t CONTROL_PORT = 4003;
 
-// A LAN light is reported offline after missing this many devStatus polls in a row.
+// A LAN light is reported offline only after missing this many devStatus polls in a row
+// and staying silent for this long. A single dropped UDP reply must never be enough.
 const uint8_t OFFLINE_AFTER_MISSED_POLLS = 3;
+const uint32_t OFFLINE_AFTER_SILENT_MS = 30000;
+// If no LAN light at all answers this many polls in a row, the listener itself is assumed broken.
+const uint8_t RESTART_AFTER_SILENT_ROUNDS = 3;
 
 // Models that accept a Kelvin value over LAN (and even echo it back in devStatus) without changing.
 // The cloud API does change them, so color temperature goes through the cloud for these.
@@ -25,6 +29,8 @@ const char *const CLOUD_ONLY_COLOR_TEMP_SKUS[] = {"H6056"};
 
 std::vector<Light> registry;
 WiFiUDP udp;
+uint8_t silentRounds = 0;
+char replyBuffer[768];
 
 int cloudRequest(const char *method, const String &path, const String &body, JsonDocument &response) {
   WiFiClientSecure client;
@@ -86,7 +92,11 @@ void cloudFetchState(Light &light) {
     const String instance = cap["instance"] | "";
     JsonVariant value = cap["state"]["value"];
     if (instance == "online") {
-      light.online = value.as<bool>();
+      // Only Govee's own answer decides this; failed or timed-out requests return above and change nothing.
+      const bool online = value.as<bool>();
+      if (light.online && !online) Serial.printf("%s marked offline: Govee cloud reports online: false\n", light.name.c_str());
+      if (!light.online && online) Serial.printf("%s is online again (Govee cloud)\n", light.name.c_str());
+      light.online = online;
     } else if (instance == "powerSwitch") {
       light.on = value.as<int>() == 1;
       light.stateKnown = true;
@@ -124,25 +134,65 @@ bool lanCommand(const Light &light, const char *cmd, JsonVariantConst data, bool
   return lanSend(light, msg);
 }
 
+// Matches a reply to a light by its device ID (scan replies include it) or by the sender's IP.
+Light *lightFrom(const IPAddress &from, JsonObjectConst msg) {
+  const char *device = msg["data"]["device"];
+  for (Light &light : registry) {
+    if (device && light.id == device) return &light;
+  }
+  for (Light &light : registry) {
+    if (light.lan && light.ip == from) return &light;
+  }
+  return nullptr;
+}
+
+void markSeen(Light &light) {
+  light.lastSeenMs = millis();
+  light.missedStatusPolls = 0;
+  if (!light.online) {
+    light.online = true;
+    Serial.printf("%s is answering on the LAN again\n", light.name.c_str());
+  }
+}
+
+void recordMissedPoll(Light &light) {
+  if (light.missedStatusPolls < 255) light.missedStatusPolls++;
+  const uint32_t silentMs = millis() - light.lastSeenMs;
+  if (light.online && light.missedStatusPolls >= OFFLINE_AFTER_MISSED_POLLS && silentMs >= OFFLINE_AFTER_SILENT_MS) {
+    light.online = false;
+    Serial.printf("%s marked offline: no LAN reply from %s for %u polls in a row (%lu s)\n", light.name.c_str(),
+                  light.ip.toString().c_str(), light.missedStatusPolls, silentMs / 1000);
+  }
+}
+
+// Reads one pending UDP reply into `doc`. Any reply counts as proof that its light is reachable.
+bool readReply(IPAddress &from, JsonDocument &doc) {
+  if (udp.parsePacket() <= 0) return false;
+  from = udp.remoteIP();
+  const int len = udp.read(replyBuffer, sizeof(replyBuffer) - 1);
+  if (len <= 0) return false;
+  replyBuffer[len] = '\0';
+  if (deserializeJson(doc, replyBuffer)) return false;
+  if (Light *light = lightFrom(from, doc["msg"])) markSeen(*light);
+  return true;
+}
+
 // Asks one LAN light for devStatus and logs the reply. Returns false if it didn't answer in time.
 bool lanStatus(const Light &light, JsonDocument &status) {
   JsonDocument empty;
   empty.to<JsonObject>();
   lanCommand(light, "devStatus", empty, true);
 
-  char buffer[768];
   const uint32_t start = millis();
   while (millis() - start < 500) {
-    if (udp.parsePacket() <= 0 || udp.remoteIP() != light.ip) {
+    IPAddress from;
+    JsonDocument doc;
+    if (!readReply(from, doc)) {
       delay(5);
       continue;
     }
-    const int len = udp.read(buffer, sizeof(buffer) - 1);
-    if (len <= 0) continue;
-    buffer[len] = '\0';
-    JsonDocument doc;
-    if (deserializeJson(doc, buffer) || doc["msg"]["cmd"] != "devStatus") continue;
-    Serial.printf("LAN <- %s %s\n", light.ip.toString().c_str(), buffer);
+    if (from != light.ip || doc["msg"]["cmd"] != "devStatus") continue;
+    Serial.printf("LAN <- %s %s\n", light.ip.toString().c_str(), replyBuffer);
     status.set(doc["msg"]["data"]);
     return true;
   }
@@ -175,20 +225,14 @@ bool nearColor(const Light &light, uint8_t r, uint8_t g, uint8_t b) {
 // Reads UDP replies on the response port for `durationMs`, passing each parsed one to `handler`.
 template <typename Handler>
 void collectReplies(uint32_t durationMs, Handler handler) {
-  char buffer[768];
   const uint32_t start = millis();
   while (millis() - start < durationMs) {
-    if (udp.parsePacket() <= 0) {
+    IPAddress from;
+    JsonDocument doc;
+    if (!readReply(from, doc)) {
       delay(5);
       continue;
     }
-    const IPAddress from = udp.remoteIP();
-    const int len = udp.read(buffer, sizeof(buffer) - 1);
-    if (len <= 0) continue;
-    buffer[len] = '\0';
-
-    JsonDocument doc;
-    if (deserializeJson(doc, buffer)) continue;
     handler(from, doc["msg"].as<JsonObject>());
   }
 }
@@ -200,33 +244,29 @@ bool lanHandlesColorTemp(const String &sku) {
   return true;
 }
 
-// Sends devStatus to each light (twice for ones that stay quiet) and returns which ones answered.
-std::vector<bool> pingLan(const std::vector<Light *> &targets) {
-  std::vector<bool> answered(targets.size(), false);
+bool seenSince(const Light &light, uint32_t since) { return (int32_t)(light.lastSeenMs - since) >= 0; }
+
+// Sends devStatus to each light (twice for ones that stay quiet). A light that still doesn't answer
+// counts as one missed poll; it's only marked offline by recordMissedPoll's rules.
+void pingLan(const std::vector<Light *> &targets) {
   JsonDocument empty;
   empty.to<JsonObject>();
+  const uint32_t start = millis();
 
   for (int attempt = 0; attempt < 2; attempt++) {
     bool anyWaiting = false;
-    for (size_t i = 0; i < targets.size(); i++) {
-      if (answered[i]) continue;
-      lanCommand(*targets[i], "devStatus", empty);
+    for (Light *light : targets) {
+      if (seenSince(*light, start)) continue;
+      lanCommand(*light, "devStatus", empty);
       anyWaiting = true;
     }
     if (!anyWaiting) break;
-    collectReplies(attempt == 0 ? 300 : 500, [&](const IPAddress &from, JsonObject msg) {
-      if (msg["cmd"] != "devStatus") return;
-      for (size_t i = 0; i < targets.size(); i++) {
-        if (targets[i]->ip == from) answered[i] = true;
-      }
-    });
+    collectReplies(attempt == 0 ? 300 : 500, [](const IPAddress &, JsonObject) {});
   }
 
-  for (size_t i = 0; i < targets.size(); i++) {
-    targets[i]->online = answered[i];
-    targets[i]->missedStatusPolls = answered[i] ? 0 : OFFLINE_AFTER_MISSED_POLLS;
+  for (Light *light : targets) {
+    if (!seenSince(*light, start)) recordMissedPoll(*light);
   }
-  return answered;
 }
 
 void fetchCloudDevices() {
@@ -256,7 +296,17 @@ void fetchCloudDevices() {
 
 }  // namespace
 
-void begin() { udp.begin(RESPONSE_PORT); }
+void begin() { restartLan(); }
+
+void restartLan() {
+  udp.stop();
+  if (udp.begin(RESPONSE_PORT)) {
+    Serial.printf("Listening for LAN replies on UDP port %u\n", RESPONSE_PORT);
+  } else {
+    Serial.printf("Couldn't listen on UDP port %u; LAN lights will look offline\n", RESPONSE_PORT);
+  }
+  silentRounds = 0;
+}
 
 std::vector<Light> &lights() { return registry; }
 
@@ -297,17 +347,19 @@ void rescanLan() {
 void refreshLanState() {
   JsonDocument empty;
   empty.to<JsonObject>();
+  const uint32_t start = millis();
+  size_t lanLights = 0;
   for (const Light &light : registry) {
-    if (light.lan) lanCommand(light, "devStatus", empty);
+    if (!light.lan) continue;
+    lanCommand(light, "devStatus", empty);
+    lanLights++;
   }
+  if (lanLights == 0) return;
 
-  std::vector<bool> answered(registry.size(), false);
-  collectReplies(400, [&answered](const IPAddress &from, JsonObject msg) {
+  collectReplies(400, [](const IPAddress &from, JsonObject msg) {
     if (msg["cmd"] != "devStatus") return;
-    for (size_t i = 0; i < registry.size(); i++) {
-      Light &light = registry[i];
-      if (!light.lan || light.ip != from) continue;
-      answered[i] = true;
+    if (Light *found = lightFrom(from, msg)) {
+      Light &light = *found;
       JsonObject data = msg["data"];
       light.on = (data["onOff"] | 0) == 1;
       light.brightness = data["brightness"] | light.brightness;
@@ -327,16 +379,21 @@ void refreshLanState() {
     }
   });
 
-  for (size_t i = 0; i < registry.size(); i++) {
-    Light &light = registry[i];
+  size_t answered = 0;
+  for (Light &light : registry) {
     if (!light.lan) continue;
-    if (answered[i]) {
-      light.missedStatusPolls = 0;
-      light.online = true;
-    } else if (light.missedStatusPolls < OFFLINE_AFTER_MISSED_POLLS && ++light.missedStatusPolls == OFFLINE_AFTER_MISSED_POLLS) {
-      light.online = false;
-      Serial.printf("%s stopped answering on the LAN, reporting it offline\n", light.name.c_str());
+    if (seenSince(light, start)) {
+      answered++;
+    } else {
+      recordMissedPoll(light);
     }
+  }
+
+  if (answered > 0) {
+    silentRounds = 0;
+  } else if (++silentRounds >= RESTART_AFTER_SILENT_ROUNDS) {
+    Serial.printf("No LAN light answered %u polls in a row; restarting the UDP listener\n", silentRounds);
+    restartLan();
   }
 }
 
@@ -526,10 +583,11 @@ bool applyCommand(JsonVariantConst ids, JsonObjectConst command, JsonArray faile
     }
   }
 
-  // LAN lights never acknowledge commands, so check they're still there.
-  const std::vector<bool> answered = pingLan(sentOverLan);
-  for (size_t i = 0; i < sentOverLan.size(); i++) {
-    if (!answered[i] && !allLights) fail(*sentOverLan[i], "light offline");
+  // LAN lights never acknowledge commands, so check they're still there. One quiet check isn't enough
+  // to call a light offline; the command only fails once the light has crossed recordMissedPoll's limits.
+  pingLan(sentOverLan);
+  for (Light *light : sentOverLan) {
+    if (!light->online && !allLights) fail(*light, "light offline");
   }
   return true;
 }
