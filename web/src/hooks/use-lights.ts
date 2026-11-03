@@ -45,6 +45,7 @@ export function useLights() {
               on: command.power ?? light.on,
               brightness: command.brightness ?? light.brightness,
               color: command.color ?? light.color,
+              colorTempK: command.color ? 0 : light.colorTempK,
             }
           : light,
       ),

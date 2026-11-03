@@ -111,6 +111,11 @@ your API key.
 **Is it safe to leave plugged in?** It runs on 5 V USB and uses about half a watt. Use a decent name-brand charger,
 keep the bare board off metal surfaces (a cheap plastic case is ideal), and don't put it inside a wall.
 
+**Can strangers control my lights?** No. The first person to sign up to your app becomes the owner. Everyone else
+needs an invite, which the owner sends by email from Settings. Your WiFi password and Govee key stay on the board and
+never go to the cloud. The phone panel at `http://govee.local` has no login, though, so anyone on your home WiFi can
+use it. Only run the hub on a network you trust.
+
 **What if my internet goes down?** The phone panel on your home WiFi keeps working for lights with LAN Control.
 The Lovable app needs the internet.
 

@@ -157,5 +157,5 @@ the check instead of the hub. Run it before the hub is syncing, or expect a queu
 | `verify-cloud`: doesn't know this hub | The hub code from `hub.py token` wasn't registered. Paste it into the app's "Set up your hub" page (or the printed prompt into Lovable's chat). |
 | `verify-cloud`: `device_sync()` doesn't exist | The Lovable project doesn't have the database setup. Paste `docs/lovable-app-prompt.md` into it. |
 | `Supabase sync failed (HTTP 401/403)` in monitor | Wrong `SUPABASE_KEY` or token not registered. Re-check step 7. |
-| App commands never arrive | In Lovable, ask it to show recent `light_commands` rows and whether inserts return an RLS error. The user must be signed in. |
+| App commands never arrive | In Lovable, ask it to show recent `light_commands` rows and whether inserts return an RLS error. The user must be signed in **and** on the app's allowed list (the first sign-up becomes the owner; others need an invite). |
 | New Govee light doesn't appear | Restart the hub (unplug/replug). It reads the device list at startup. |

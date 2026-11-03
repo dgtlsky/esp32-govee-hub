@@ -1,4 +1,4 @@
 platformio>=6.1
 esptool>=4.7
 pyserial>=3.5
-littlefs-python>=0.12
+littlefs-python>=0.14

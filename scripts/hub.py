@@ -106,8 +106,9 @@ def cmd_doctor(args):
     port = find_port(args.port)
     print(f"Board port: {port}")
     result = subprocess.run([sys.executable, "-m", "esptool", "--port", port, "chip_id"], capture_output=True, text=True)
-    chip = re.search(r"Chip is (.+)", result.stdout)
-    mac = re.search(r"MAC: ([0-9a-f:]+)", result.stdout)
+    # esptool v4 prints "Chip is ...", v5 prints "Chip type:   ...".
+    chip = re.search(r"Chip (?:is|type:)\s*(.+)", result.stdout)
+    mac = re.search(r"MAC:\s+([0-9a-f:]+)", result.stdout)
     if not chip:
         fail("Found a serial port but couldn't talk to the chip. Try holding the BOOT button while this runs.\n" + result.stdout[-800:])
     print(f"Chip: {chip.group(1)}")

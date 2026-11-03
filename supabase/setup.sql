@@ -1,6 +1,7 @@
 -- Supabase "mailbox" between a web app and the ESP32 Govee hub.
 --
---   App (signed-in users)  -> inserts rows into light_commands, reads/subscribes to lights
+--   App (allowed users)    -> inserts rows into light_commands, reads/subscribes to lights
+--                             (only emails in allowed_emails; the first sign-up claims ownership)
 --   ESP32                  -> calls device_sync() every ~2s: reports light state, picks up commands, reports results
 --
 -- The ESP32 authenticates with its own device token (stored hashed in public.devices),
@@ -48,21 +49,99 @@ create table public.devices (
   last_seen_at timestamptz
 );
 
+-- Who may use the app. Anyone can sign up to a Lovable app, so access is limited to this list.
+-- The first person to call claim_first_owner() (the app does this after sign-in) is added automatically;
+-- they can then invite others by inserting their emails.
+create table public.allowed_emails (
+  email text primary key check (email = lower(email)),
+  added_at timestamptz not null default now()
+);
+
+create or replace function public.is_allowed_user()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.allowed_emails where email = lower(coalesce(auth.jwt() ->> 'email', ''))
+  );
+$$;
+
+create or replace function public.claim_first_owner()
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_email text := lower(coalesce(auth.jwt() ->> 'email', ''));
+begin
+  if auth.uid() is null or v_email = '' then
+    return false;
+  end if;
+  lock table public.allowed_emails in exclusive mode;
+  if not exists (select 1 from public.allowed_emails) then
+    insert into public.allowed_emails (email) values (v_email);
+  end if;
+  return exists (select 1 from public.allowed_emails where email = v_email);
+end;
+$$;
+
 alter table public.lights enable row level security;
 alter table public.light_commands enable row level security;
 alter table public.devices enable row level security;
+alter table public.allowed_emails enable row level security;
 
-create policy "Signed-in users can read lights"
-  on public.lights for select to authenticated using (true);
+create policy "Allowed users can read lights"
+  on public.lights for select to authenticated using (public.is_allowed_user());
 
-create policy "Signed-in users can read commands"
-  on public.light_commands for select to authenticated using (true);
+create policy "Allowed users can read commands"
+  on public.light_commands for select to authenticated using (public.is_allowed_user());
 
-create policy "Signed-in users can send commands"
+create policy "Allowed users can send commands"
   on public.light_commands for insert to authenticated
-  with check (created_by = auth.uid() and status = 'pending');
+  with check (public.is_allowed_user() and created_by = auth.uid() and status = 'pending');
 
--- public.devices has no policies on purpose: only device_sync() (security definer) can read it.
+create policy "Allowed users can see the allow list"
+  on public.allowed_emails for select to authenticated using (public.is_allowed_user());
+
+create policy "Allowed users can invite others"
+  on public.allowed_emails for insert to authenticated with check (public.is_allowed_user());
+
+create policy "Allowed users can remove others"
+  on public.allowed_emails for delete to authenticated
+  using (public.is_allowed_user() and email <> lower(coalesce(auth.jwt() ->> 'email', '')));
+
+-- public.devices has no policies on purpose: only the security definer functions below can touch it.
+
+-- Called from the app's "Set up your hub" page with the hub code printed by `scripts/hub.py token`.
+create or replace function public.register_hub(p_token_hash text, p_name text default 'ESP32 hub')
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not public.is_allowed_user() then
+    raise exception 'Please sign in with an allowed account first' using errcode = '42501';
+  end if;
+  if p_token_hash !~ '^[0-9a-f]{64}$' then
+    raise exception 'That hub code doesn''t look right. It should be 64 letters and numbers.' using errcode = '22023';
+  end if;
+  insert into public.devices (name, token_hash)
+  values (coalesce(nullif(trim(p_name), ''), 'ESP32 hub'), p_token_hash)
+  on conflict (token_hash) do nothing;
+end;
+$$;
+
+revoke all on function public.is_allowed_user() from public;
+revoke all on function public.claim_first_owner() from public;
+revoke all on function public.register_hub(text, text) from public;
+grant execute on function public.is_allowed_user() to authenticated;
+grant execute on function public.claim_first_owner() to authenticated;
+grant execute on function public.register_hub(text, text) to authenticated;
 
 create or replace function public.hub_online()
 returns boolean
@@ -71,7 +150,8 @@ stable
 security definer
 set search_path = ''
 as $$
-  select exists (select 1 from public.devices where last_seen_at > now() - interval '30 seconds');
+  select public.is_allowed_user()
+    and exists (select 1 from public.devices where last_seen_at > now() - interval '30 seconds');
 $$;
 
 revoke all on function public.hub_online() from public;

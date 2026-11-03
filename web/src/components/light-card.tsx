@@ -5,7 +5,7 @@ import { ColorSwatches } from "@/components/color-swatches"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { rgbToHex, type ControlCommand, type Light } from "@/lib/api"
+import { displayColor, rgbToHex, type ControlCommand, type Light } from "@/lib/api"
 
 type LightCardProps = {
   light: Light
@@ -15,7 +15,7 @@ type LightCardProps = {
 export function LightCard({ light, onControl }: LightCardProps) {
   const send = (command: Omit<ControlCommand, "ids">) => onControl({ ...command, ids: [light.id] })
   const isOn = light.stateKnown && light.on
-  const glow = rgbToHex(light.color)
+  const glow = rgbToHex(displayColor(light))
 
   return (
     <Card className="transition-opacity">
