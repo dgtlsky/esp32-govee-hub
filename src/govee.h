@@ -11,6 +11,13 @@ struct Light {
   String sku;
   IPAddress ip;
   bool lan = false;
+  bool inCloud = false;  // listed in the Govee account, so the cloud API can control it
+
+  bool online = true;  // false once a LAN light stops answering, or Govee's cloud reports it offline
+  uint8_t missedStatusPolls = 0;
+
+  bool supportsColorTemp = true;
+  bool lanColorTemp = true;  // false for models that ignore Kelvin over LAN; those use the cloud for it
 
   bool stateKnown = false;
   bool on = false;
@@ -34,8 +41,11 @@ void discover();
 // Re-runs only the LAN scan, picking up lights whose IP address changed.
 void rescanLan();
 
-// Asks every LAN light for its current state. Cloud-only lights keep their last known state.
+// Asks every LAN light for its current state. Lights that stop answering are marked offline.
 void refreshLanState();
+
+// Fetches state (including online/offline) for cloud-only lights from Govee's cloud.
+void refreshCloudState();
 
 std::vector<Light> &lights();
 Light *find(const String &id);
@@ -47,9 +57,10 @@ bool setColorTemp(Light &light, uint16_t kelvin);  // clamped to the light's sup
 
 // Applies optional "power" (bool), "brightness" (1-100), "color" ({r,g,b}) and
 // "color_temp_k" / "colorTempK" (Kelvin) fields from `command`
-// to the lights listed in `ids`, or to every light if `ids` is null. IDs that fail go into `failed`.
-// Returns false if no light matched.
-bool applyCommand(JsonVariantConst ids, JsonObjectConst command, JsonArray failed);
+// to the lights listed in `ids`, or to every light if `ids` is null. IDs that fail go into `failed`, and
+// `error` gets a readable reason per failed light ("TV light: light offline"). Offline lights fail when
+// named in `ids` but are skipped when the command is for all lights. Returns false if no light matched.
+bool applyCommand(JsonVariantConst ids, JsonObjectConst command, JsonArray failed, String &error);
 
 void toJson(const Light &light, JsonObject out);
 void allToJson(JsonArray out);

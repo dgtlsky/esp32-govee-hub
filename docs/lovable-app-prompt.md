@@ -21,11 +21,15 @@ How the app works:
   brightness 0-100, color jsonb {r,g,b}, color_temp_k, updated_at). Subscribe to realtime changes on it.
   color_temp_k null means the light is in RGB color mode (show its color); a number means white mode at that
   Kelvin (show the temperature; color will be {0,0,0}).
+  state_known false means the hub can't reach the light (unplugged, or offline in Govee's cloud): show it greyed
+  out with an "Offline" label and disable its controls.
 - To control lights, INSERT into `light_commands` with any of: light_ids (text[]; null = all lights),
   power (boolean), brightness (1-100), color (jsonb {r,g,b}), color_temp_k (Kelvin, 2000-9000).
   Send either color or color_temp_k, never both. Leave other fields null to keep them unchanged.
   Never set status yourself. A hardware hub picks the row up within ~2 seconds and sets status to
-  'done', 'failed' (with error), or 'expired'. Subscribe to realtime on light_commands to show this.
+  'done', 'failed' (with error), or 'expired'. Subscribe to realtime on light_commands to show this, and show
+  the error text as a toast on failure (for example "TV light: light offline"). Commands for all lights
+  (light_ids null) skip offline lights instead of failing.
 - Show a "Hub online/offline" indicator using the RPC hub_online() (poll every 10s).
 
 "Set up your hub" page (show it automatically while the lights table is empty, and link to it from Settings):

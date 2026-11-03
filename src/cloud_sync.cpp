@@ -49,7 +49,8 @@ void runCommands(JsonArrayConst commands) {
   for (JsonObjectConst command : commands) {
     JsonDocument failedDoc;
     JsonArray failed = failedDoc.to<JsonArray>();
-    const bool matched = govee::applyCommand(command["light_ids"], command, failed);
+    String error;
+    const bool matched = govee::applyCommand(command["light_ids"], command, failed, error);
 
     JsonObject result = pendingResults.add<JsonObject>();
     result["id"] = command["id"];
@@ -57,13 +58,12 @@ void runCommands(JsonArrayConst commands) {
     if (!matched) {
       result["error"] = "No matching lights";
     } else if (failed.size() > 0) {
-      String ids;
-      serializeJson(failed, ids);
-      result["error"] = "Failed for " + ids;
+      result["error"] = error;
     }
     String raw;
     serializeJson(command, raw);
-    Serial.printf("Supabase command %s -> %s\n", raw.c_str(), result["ok"] ? "done" : "failed");
+    Serial.printf("Supabase command %s -> %s%s%s\n", raw.c_str(), result["ok"] ? "done" : "failed",
+                  result["error"].is<const char *>() ? ": " : "", result["error"] | "");
   }
 }
 

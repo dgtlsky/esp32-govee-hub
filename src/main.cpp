@@ -15,6 +15,9 @@ static const uint32_t LAN_RESCAN_INTERVAL_MS = 5UL * 60UL * 1000UL;
 
 static WebServer server(80);
 static uint32_t lastLanRescan = 0;
+// Govee's cloud API allows 10,000 requests a day per account; one state check a minute per cloud light fits.
+static const uint32_t CLOUD_STATE_INTERVAL_MS = 60UL * 1000UL;
+static uint32_t lastCloudState = 0;
 
 static bool connectWifi() {
   Serial.printf("Connecting to WiFi \"%s\"", WIFI_SSID);
@@ -68,10 +71,12 @@ static void handleControl() {
 
   JsonDocument res;
   JsonArray failed = res["failed"].to<JsonArray>();
-  if (!govee::applyCommand(req["ids"], req.as<JsonObjectConst>(), failed)) {
+  String error;
+  if (!govee::applyCommand(req["ids"], req.as<JsonObjectConst>(), failed, error)) {
     sendError(404, "No matching lights");
     return;
   }
+  if (!error.isEmpty()) res["error"] = error;
 
   govee::allToJson(res["lights"].to<JsonArray>());
   String body;
@@ -106,10 +111,12 @@ static void startServer() {
 
 static void toggleAllLights() {
   bool anyOn = false;
-  for (const Light &light : govee::lights()) anyOn |= light.on;
+  for (const Light &light : govee::lights()) anyOn |= light.online && light.on;
 
   Serial.printf("BOOT button: turning all lights %s\n", anyOn ? "off" : "on");
-  for (Light &light : govee::lights()) govee::setPower(light, !anyOn);
+  for (Light &light : govee::lights()) {
+    if (light.online) govee::setPower(light, !anyOn);
+  }
 }
 
 void setup() {
@@ -124,6 +131,7 @@ void setup() {
   govee::begin();
   govee::discover();
   lastLanRescan = millis();
+  lastCloudState = millis();
   startServer();
   cloud_sync::begin();
 }
@@ -144,6 +152,11 @@ void loop() {
   if (millis() - lastLanRescan > LAN_RESCAN_INTERVAL_MS) {
     govee::rescanLan();
     lastLanRescan = millis();
+  }
+
+  if (millis() - lastCloudState > CLOUD_STATE_INTERVAL_MS) {
+    govee::refreshCloudState();
+    lastCloudState = millis();
   }
 
   delay(2);
