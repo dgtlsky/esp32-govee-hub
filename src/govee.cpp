@@ -112,11 +112,64 @@ bool lanSend(const Light &light, const JsonDocument &msg) {
   return udp.endPacket() == 1;
 }
 
-bool lanCommand(const Light &light, const char *cmd, JsonVariantConst data) {
+bool lanCommand(const Light &light, const char *cmd, JsonVariantConst data, bool log = false) {
   JsonDocument msg;
   msg["msg"]["cmd"] = cmd;
   msg["msg"]["data"] = data;
+  if (log) {
+    String body;
+    serializeJson(msg, body);
+    Serial.printf("LAN -> %s %s\n", light.ip.toString().c_str(), body.c_str());
+  }
   return lanSend(light, msg);
+}
+
+// Asks one LAN light for devStatus and logs the reply. Returns false if it didn't answer in time.
+bool lanStatus(const Light &light, JsonDocument &status) {
+  JsonDocument empty;
+  empty.to<JsonObject>();
+  lanCommand(light, "devStatus", empty, true);
+
+  char buffer[768];
+  const uint32_t start = millis();
+  while (millis() - start < 500) {
+    if (udp.parsePacket() <= 0 || udp.remoteIP() != light.ip) {
+      delay(5);
+      continue;
+    }
+    const int len = udp.read(buffer, sizeof(buffer) - 1);
+    if (len <= 0) continue;
+    buffer[len] = '\0';
+    JsonDocument doc;
+    if (deserializeJson(doc, buffer) || doc["msg"]["cmd"] != "devStatus") continue;
+    Serial.printf("LAN <- %s %s\n", light.ip.toString().c_str(), buffer);
+    status.set(doc["msg"]["data"]);
+    return true;
+  }
+  Serial.printf("LAN <- %s (no devStatus reply)\n", light.ip.toString().c_str());
+  return false;
+}
+
+// Approximate RGB of white light at a color temperature (Tanner Helland's curve fit).
+void kelvinToRgb(uint16_t kelvin, uint8_t &r, uint8_t &g, uint8_t &b) {
+  const float t = kelvin / 100.0f;
+  float red, green, blue;
+  if (t <= 66) {
+    red = 255;
+    green = 99.4708025861f * logf(t) - 161.1195681661f;
+    blue = t <= 19 ? 0 : 138.5177312231f * logf(t - 10) - 305.0447927307f;
+  } else {
+    red = 329.698727446f * powf(t - 60, -0.1332047592f);
+    green = 288.1221695283f * powf(t - 60, -0.0755148492f);
+    blue = 255;
+  }
+  r = constrain(lroundf(red), 0, 255);
+  g = constrain(lroundf(green), 0, 255);
+  b = constrain(lroundf(blue), 0, 255);
+}
+
+bool nearColor(const Light &light, uint8_t r, uint8_t g, uint8_t b) {
+  return abs(light.r - r) <= 3 && abs(light.g - g) <= 3 && abs(light.b - b) <= 3;
 }
 
 // Reads UDP replies on the response port for `durationMs`, passing each parsed one to `handler`.
@@ -261,7 +314,15 @@ void refreshLanState() {
       light.r = data["color"]["r"] | light.r;
       light.g = data["color"]["g"] | light.g;
       light.b = data["color"]["b"] | light.b;
-      light.colorTempK = data["colorTemInKelvin"] | 0;
+      const uint16_t reportedK = data["colorTemInKelvin"] | 0;
+      if (reportedK == 0 && light.emulatedColorTempK) {
+        uint8_t r, g, b;
+        kelvinToRgb(light.emulatedColorTempK, r, g, b);
+        if (!nearColor(light, r, g, b)) light.emulatedColorTempK = 0;  // changed elsewhere, e.g. the Govee app
+      } else {
+        light.emulatedColorTempK = 0;
+      }
+      light.colorTempK = light.emulatedColorTempK ? light.emulatedColorTempK : reportedK;
       light.stateKnown = true;
     }
   });
@@ -332,15 +393,37 @@ bool setBrightness(Light &light, uint8_t percent) {
   return ok;
 }
 
+static bool lanColorwc(const Light &light, uint8_t r, uint8_t g, uint8_t b, uint16_t kelvin, bool log = false) {
+  JsonDocument data;
+  data["color"]["r"] = r;
+  data["color"]["g"] = g;
+  data["color"]["b"] = b;
+  data["colorTemInKelvin"] = kelvin;
+  return lanCommand(light, "colorwc", data, log);
+}
+
+static bool cloudColorTemp(const Light &light, uint16_t kelvin) {
+  JsonDocument value;
+  value.set(kelvin);
+  const bool ok = cloudControl(light, "devices.capabilities.color_setting", "colorTemperatureK", value);
+  Serial.printf("Govee cloud -> %s colorTemperatureK %u: %s\n", light.name.c_str(), kelvin, ok ? "ok" : "failed");
+  return ok;
+}
+
+static bool sendKelvinAsRgb(Light &light, uint16_t kelvin) {
+  uint8_t r, g, b;
+  kelvinToRgb(kelvin, r, g, b);
+  if (!lanColorwc(light, r, g, b, 0, true)) return false;
+  light.r = r;
+  light.g = g;
+  light.b = b;
+  return true;
+}
+
 bool setColor(Light &light, uint8_t r, uint8_t g, uint8_t b) {
   bool ok = true;
   if (light.lan) {
-    JsonDocument data;
-    data["color"]["r"] = r;
-    data["color"]["g"] = g;
-    data["color"]["b"] = b;
-    data["colorTemInKelvin"] = 0;
-    ok = lanCommand(light, "colorwc", data);
+    ok = lanColorwc(light, r, g, b, 0);
   } else {
     JsonDocument value;
     value.set((uint32_t(r) << 16) | (uint32_t(g) << 8) | b);
@@ -351,6 +434,7 @@ bool setColor(Light &light, uint8_t r, uint8_t g, uint8_t b) {
     light.g = g;
     light.b = b;
     light.colorTempK = 0;
+    light.emulatedColorTempK = 0;
   }
   return ok;
 }
@@ -358,20 +442,35 @@ bool setColor(Light &light, uint8_t r, uint8_t g, uint8_t b) {
 bool setColorTemp(Light &light, uint16_t kelvin) {
   if (!light.supportsColorTemp) return false;
   kelvin = constrain(kelvin, light.minColorTempK, light.maxColorTempK);
-  bool ok;
-  if (light.lan && light.lanColorTemp) {
-    JsonDocument data;
-    data["color"]["r"] = 0;
-    data["color"]["g"] = 0;
-    data["color"]["b"] = 0;
-    data["colorTemInKelvin"] = kelvin;
-    ok = lanCommand(light, "colorwc", data);
+  bool ok = false;
+  bool emulated = false;
+  JsonDocument status;
+
+  if (!light.lan) {
+    ok = cloudColorTemp(light, kelvin);
+  } else if (light.lanColorTemp) {
+    ok = lanColorwc(light, 0, 0, 0, kelvin, true);
+    if (ok && lanStatus(light, status) && (status["colorTemInKelvin"] | 0) == 0) {
+      Serial.printf("%s ignored colorTemInKelvin; showing color temperature as RGB from now on\n", light.name.c_str());
+      light.lanColorTemp = false;
+      emulated = ok = sendKelvinAsRgb(light, kelvin);
+    }
   } else {
-    JsonDocument value;
-    value.set(kelvin);
-    ok = cloudControl(light, "devices.capabilities.color_setting", "colorTemperatureK", value);
+    // Models in CLOUD_ONLY_COLOR_TEMP_SKUS echo the Kelvin value over LAN without changing, so the
+    // devStatus reply can't detect it. The cloud changes them for real; RGB is the fallback.
+    if (light.inCloud) ok = cloudColorTemp(light, kelvin);
+    if (ok) {
+      lanStatus(light, status);
+    } else {
+      Serial.printf("%s: showing %u K as RGB\n", light.name.c_str(), kelvin);
+      emulated = ok = sendKelvinAsRgb(light, kelvin);
+    }
   }
-  if (ok) light.colorTempK = kelvin;
+
+  if (ok) {
+    light.colorTempK = kelvin;
+    light.emulatedColorTempK = emulated ? kelvin : 0;
+  }
   return ok;
 }
 

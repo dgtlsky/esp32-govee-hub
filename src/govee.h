@@ -26,6 +26,7 @@ struct Light {
   uint8_t g = 255;
   uint8_t b = 255;
   uint16_t colorTempK = 0;  // 0 while the light is in RGB color mode
+  uint16_t emulatedColorTempK = 0;  // set while showing a Kelvin value as an RGB color
 
   uint16_t minColorTempK = 2000;
   uint16_t maxColorTempK = 9000;
