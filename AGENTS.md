@@ -91,16 +91,17 @@ Then set it back to its previous value. On Windows PowerShell use `curl.exe`.
 
 Ask whether they remixed the template Lovable project (link in README.md) or are building their own.
 
-- **Remixed the template:** the database tables and functions come with the remix. Have them publish it and
-  sign up in the app first.
+- **Remixed the template:** the database comes with the remix. They should publish it, sign up, and open the
+  app's **"Set up your hub"** page. It shows a ready-made message containing the backend URL and publishable key
+  that they can paste to you.
 - **Building their own:** have them paste the prompt in `docs/lovable-app-prompt.md` into a new Lovable project
   with Lovable Cloud enabled.
 
 Then:
 
-1. Ask for the project's **URL** (`https://....supabase.co` or `https://....lovable.cloud`) and **publishable /
-   anon key** (`sb_publishable_...` or a long `eyJ...`). In Lovable they're under Cloud settings, or they can ask
-   Lovable's chat "what are my backend URL and publishable key?".
+1. Get the project's **URL** (`https://....supabase.co` or `https://....lovable.cloud`) and **publishable /
+   anon key** (`sb_publishable_...` or a long `eyJ...`). Without the setup page, they're in Lovable's Cloud
+   settings, or the user can ask Lovable's chat "what are my backend URL and publishable key?".
 2. Save them and create the hub's token:
 
    ```bash
@@ -109,8 +110,9 @@ Then:
    python3 scripts/hub.py token
    ```
 
-3. `token` prints a short prompt containing a hash. Have the user paste it into their Lovable project's chat
-   (it registers the hub in their database). Wait for them to confirm Lovable ran it.
+3. `token` prints a **hub code** (a 64-character hash). Have the user paste it into the app's "Set up your hub"
+   page and press Register. If their app has no such page, `token` also prints a prompt to paste into Lovable's
+   chat instead. Wait for them to confirm.
 4. Verify and flash:
 
    ```bash
@@ -152,7 +154,7 @@ the check instead of the hub. Run it before the hub is syncing, or expect a queu
 | A light shows `cloud` instead of an IP | Turn on LAN Control for it in the Govee app (if the model offers it), then restart the hub (unplug/replug). |
 | Control panel page is blank or says "isn't uploaded yet" | Run step 5. |
 | Phone can't open the page | Phone must be on the same home WiFi. Use the IP, not `govee.local`. |
-| `verify-cloud`: doesn't know this hub | The Lovable registration prompt from `hub.py token` wasn't run. Paste it into Lovable again. |
+| `verify-cloud`: doesn't know this hub | The hub code from `hub.py token` wasn't registered. Paste it into the app's "Set up your hub" page (or the printed prompt into Lovable's chat). |
 | `verify-cloud`: `device_sync()` doesn't exist | The Lovable project doesn't have the database setup. Paste `docs/lovable-app-prompt.md` into it. |
 | `Supabase sync failed (HTTP 401/403)` in monitor | Wrong `SUPABASE_KEY` or token not registered. Re-check step 7. |
 | App commands never arrive | In Lovable, ask it to show recent `light_commands` rows and whether inserts return an RLS error. The user must be signed in. |

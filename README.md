@@ -33,8 +33,8 @@ and WiFi drops.
 ## Control from anywhere with Lovable
 
 1. Remix the template app: **REMIX_LINK_HERE**, publish it, and sign up.
-2. Tell your agent: **"Connect my hub to my Lovable app."** It'll ask for your app's backend URL and publishable
-   key, then give you one short prompt to paste into Lovable.
+2. Open **Set up your hub** in the app and copy the message it shows to your agent.
+3. The agent gives you back a **hub code**. Paste it into the same page and press **Register**. Done.
 
 Prefer to build your own app? Use [`docs/lovable-app-prompt.md`](docs/lovable-app-prompt.md).
 

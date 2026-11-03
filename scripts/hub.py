@@ -221,7 +221,10 @@ def cmd_token(args):
         write_secret("DEVICE_TOKEN", token)
         print("Generated a new DEVICE_TOKEN and saved it to include/secrets.h (reflash to apply).")
     token_hash = hashlib.sha256(token.encode()).hexdigest()
-    print("\nPaste this into the Lovable project's chat (the hash is safe to share; the token is not):\n")
+    print("\nHub code (safe to share; the token itself stays secret):\n")
+    print(f"  {token_hash}\n")
+    print('Paste it into the app\'s "Set up your hub" page and press Register.')
+    print("If the app has no such page, paste this into the Lovable project's chat instead:\n")
     print(lovable_prompt(token_hash))
 
 
