@@ -68,7 +68,19 @@ charger anywhere in your home, and you're done.
 
 ## Control from anywhere with Lovable
 
-1. **Remix** the template app: **REMIX_LINK_HERE**, publish it, and sign up.
+Get your own lights app: a simple web app you can install on your phone's home screen like a regular app. It has a
+floor plan where you can place your lights, one-tap color and warm-to-cool white, and on/off for every light.
+
+[![Remix on Lovable](https://img.shields.io/badge/Remix%20on-Lovable-FF4D8D?style=for-the-badge)](https://lovable.dev/projects/99f7873c-6f0a-4419-8c26-9d845fcfd0b8/remix)
+
+<p align="center">
+  <img src="docs/lovable-app-floorplan-color.png" alt="Floor plan with colored lights" width="260">
+  <img src="docs/lovable-app-floorplan-warm.png" alt="Floor plan in warm white" width="260">
+  <img src="docs/lovable-app-list.png" alt="List of lights with brightness and color temperature" width="260">
+</p>
+
+1. **[Remix the template app](https://lovable.dev/projects/99f7873c-6f0a-4419-8c26-9d845fcfd0b8/remix)**, publish
+   it, and sign up. The first account becomes the owner.
 2. Open **Set up your hub** in the app and copy the message it shows to your agent.
 3. The agent gives you back a **hub code**. Paste it into the same page and press **Register**.
 

@@ -89,7 +89,7 @@ Then set it back to its previous value. On Windows PowerShell use `curl.exe`.
 
 ## Step 7: connect a Lovable app (control from anywhere)
 
-Ask whether they remixed the template Lovable project (link in README.md) or are building their own.
+Ask whether they remixed the template Lovable project (https://lovable.dev/projects/99f7873c-6f0a-4419-8c26-9d845fcfd0b8/remix) or are building their own.
 
 - **Remixed the template:** the database comes with the remix. They should publish it, sign up, and open the
   app's **"Set up your hub"** page. It shows a ready-made message containing the backend URL and publishable key
