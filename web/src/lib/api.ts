@@ -21,7 +21,7 @@ export type ControlCommand = {
   color?: Rgb
 }
 
-type ControlResponse = { lights: Light[]; failed: string[] }
+type ControlResponse = { lights: Light[]; failed: string[]; error?: string }
 
 export async function fetchLights(): Promise<Light[]> {
   const res = await fetch("/api/lights")

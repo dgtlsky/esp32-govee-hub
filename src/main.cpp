@@ -105,7 +105,7 @@ static void handleIndex() {
   if (!file) {
     server.send(200, "text/plain",
                 "Govee controller is running, but the web panel isn't uploaded yet. "
-                "Run: pio run -t uploadfs");
+                "Run: python3 scripts/hub.py upload-web --build");
     return;
   }
   server.streamFile(file, "text/html");

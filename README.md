@@ -2,6 +2,7 @@
 
 **A $10 board. Your Govee lights. An app you designed yourself. Set up by your AI agent.**
 
+[![Build](https://github.com/dgtlsky/esp32-govee-hub/actions/workflows/build.yml/badge.svg)](https://github.com/dgtlsky/esp32-govee-hub/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![ESP32](https://img.shields.io/badge/board-ESP32-E7352C)
 ![Govee](https://img.shields.io/badge/lights-Govee-1E90FF)
@@ -131,6 +132,11 @@ use it. Only run the hub on a network you trust.
 
 **What if my internet goes down?** The phone panel on your home WiFi keeps working for lights with LAN Control.
 The Lovable app needs the internet.
+
+**Why does a light show as Offline?** The hub couldn't reach it. Either it hasn't answered on your WiFi for about
+30 seconds (unplugged, or switched off at the wall), or Govee's cloud says it's offline. It comes back on its own
+once the light is reachable again. A light you no longer own but that's still in your Govee account will always
+show as offline; remove it in the Govee Home app and restart the hub.
 
 **I added a new Govee light. How do I get it in?** Unplug the hub and plug it back in. It re-reads your lights
 on startup.

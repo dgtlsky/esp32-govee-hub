@@ -58,7 +58,7 @@ export function useLights() {
       setConnected(true)
       if (result.failed.length > 0) {
         const names = result.lights.filter((l) => result.failed.includes(l.id)).map((l) => l.name)
-        toast.error(`Couldn't update ${names.join(", ")}`)
+        toast.error(result.error ?? `Couldn't update ${names.join(", ")}`)
       }
     } catch {
       setConnected(false)

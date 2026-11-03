@@ -158,4 +158,6 @@ the check instead of the hub. Run it before the hub is syncing, or expect a queu
 | `verify-cloud`: `device_sync()` doesn't exist | The Lovable project doesn't have the database setup. Paste `docs/lovable-app-prompt.md` into it. |
 | `Supabase sync failed (HTTP 401/403)` in monitor | Wrong `SUPABASE_KEY` or token not registered. Re-check step 7. |
 | App commands never arrive | In Lovable, ask it to show recent `light_commands` rows and whether inserts return an RLS error. The user must be signed in **and** on the app's allowed list (the first sign-up becomes the owner; others need an invite). |
+| A light shows offline / commands fail with "light offline" | Run `monitor`: the hub logs why (`marked offline: no LAN reply ...` or `Govee cloud reports online: false`). Check the light has power. A light that's gone but still in the Govee account stays offline; remove it in the Govee app and restart the hub. |
+| A light ignores warm/cool white | Some models ignore color temperature over the LAN. Add the model to `CLOUD_ONLY_COLOR_TEMP_SKUS` in `src/govee.cpp` so it goes through Govee's cloud, then `flash`. |
 | New Govee light doesn't appear | Restart the hub (unplug/replug). It reads the device list at startup. |
