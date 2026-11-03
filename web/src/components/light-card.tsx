@@ -1,4 +1,4 @@
-import { Cloud, Lightbulb, Wifi } from "lucide-react"
+import { Cloud, CloudOff, Lightbulb, Wifi } from "lucide-react"
 
 import { BrightnessSlider } from "@/components/brightness-slider"
 import { ColorSwatches } from "@/components/color-swatches"
@@ -40,7 +40,13 @@ export function LightCard({ light, onControl }: LightCardProps) {
               <Cloud /> Cloud
             </Badge>
           )}
-          {!light.stateKnown && <span>State unknown</span>}
+          {light.online === false ? (
+            <Badge variant="destructive">
+              <CloudOff /> Offline
+            </Badge>
+          ) : (
+            !light.stateKnown && <span>State unknown</span>
+          )}
         </CardDescription>
         <CardAction>
           <Switch

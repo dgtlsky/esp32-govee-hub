@@ -1,6 +1,7 @@
 import { Lightbulb, RefreshCw, WifiOff } from "lucide-react"
 
 import { AllLightsCard } from "@/components/all-lights-card"
+import { LanModeNotice } from "@/components/lan-mode-notice"
 import { LightCard } from "@/components/light-card"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -41,6 +42,7 @@ export function Dashboard() {
         </div>
       ) : (
         <>
+          <LanModeNotice lights={lights} />
           <AllLightsCard lights={lights} onControl={control} />
           <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {lights.map((light) => (

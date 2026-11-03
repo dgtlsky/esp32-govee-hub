@@ -6,6 +6,7 @@ export type Light = {
   sku: string
   connection: "lan" | "cloud"
   ip?: string
+  online?: boolean
   stateKnown: boolean
   on: boolean
   brightness: number
