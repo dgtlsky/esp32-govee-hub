@@ -74,9 +74,10 @@ floor plan where you can place your lights, one-tap color and warm-to-cool white
 [![Remix on Lovable](https://img.shields.io/badge/Remix%20on-Lovable-FF4D8D?style=for-the-badge)](https://lovable.dev/projects/99f7873c-6f0a-4419-8c26-9d845fcfd0b8/remix)
 
 <p align="center">
-  <img src="docs/lovable-app-floorplan-color.png" alt="Floor plan with colored lights" width="260">
-  <img src="docs/lovable-app-floorplan-warm.png" alt="Floor plan in warm white" width="260">
-  <img src="docs/lovable-app-list.png" alt="List of lights with brightness and color temperature" width="260">
+  <img src="docs/lovable-app-floorplan-color.png" alt="Floor plan with colored lights" width="200">
+  <img src="docs/lovable-app-floorplan-warm.png" alt="Floor plan in warm white" width="200">
+  <img src="docs/lovable-app-light-detail.png" alt="One light selected, with its own brightness, color and white controls" width="200">
+  <img src="docs/lovable-app-list.png" alt="List of lights with brightness and color temperature" width="200">
 </p>
 
 1. **[Remix the template app](https://lovable.dev/projects/99f7873c-6f0a-4419-8c26-9d845fcfd0b8/remix)**, publish
